@@ -4,21 +4,24 @@ package main // import "fknsrs.biz/p/loggly-cache"
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
+
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
-	addr       = flag.String("addr", ":3000", "Address to listen on.")
-	logglyHost = flag.String("loggly_host", "logs-01.loggly.com", "Host to submit logs to.")
-	apiKey     = flag.String("api_key", "", "Loggly API key.")
-	timeout    = flag.Duration("timeout", time.Second*5, "Maximum time to hold a batch for.")
+	app        = kingpin.New("loggly-cache", "Cache loggly requests.")
+	addr       = app.Flag("addr", "Address to listen on.").Default(":3000").OverrideDefaultFromEnvar("ADDR").String()
+	logglyHost = app.Flag("loggly_host", "Host to submit logs to.").Default("logs-01.loggly.com").OverrideDefaultFromEnvar("LOGGLY_HOST").String()
+	apiKey     = app.Flag("api_key", "Loggly API key.").OverrideDefaultFromEnvar("API_KEY").String()
+	timeout    = app.Flag("timeout", "Maximum time to hold a batch for.").Default("5s").OverrideDefaultFromEnvar("TIMEOUT").Duration()
 )
 
 func main() {
-	flag.Parse()
+	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	b := batcher{
 		host:    *logglyHost,
