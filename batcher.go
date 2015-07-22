@@ -5,19 +5,21 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-)
 
-const maxSize = 1024 * 1024 * 5
+	"github.com/julienc91/sizer"
+)
 
 type batcher struct {
 	host    string
 	key     string
 	buffer  []byte
 	batches chan []byte
+	maxSize sizer.Size
+	maxTime time.Duration
 }
 
 func (b *batcher) push(d []byte) {
-	if len(b.buffer)+len(d)+1 > maxSize {
+	if len(b.buffer)+len(d)+1 >= int(b.maxSize.ConvertTo(sizer.By).Value().Float()) {
 		b.flush()
 	}
 
@@ -36,7 +38,7 @@ func (b *batcher) flush() {
 func (b *batcher) run() {
 	for {
 		select {
-		case <-time.After(time.Second * 5):
+		case <-time.After(b.maxTime):
 			b.flush()
 		case data := <-b.batches:
 			go func(data []byte) {
